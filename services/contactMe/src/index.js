@@ -14,29 +14,8 @@ import _ from 'lodash';
 import debug from 'debug'
 const log = debug(process.env.DEBUG_TAG);
 
-export const create = async (event, context) => {
-  log('initializing handler...');
-  let data;
-
-  // parse json from request body
-  try {
-    const body = JSON.parse(event.body);
-    data = body.data;
-  } catch (err) {
-    log(`err: ${err}`);
-    return httpService.createResponse(HTTP_BAD_REQUEST, {
-      success: false,
-      error: "Unable to parse request data.",
-    });
-  }
-
-  // create the record
-  const record = {
-    id: uuidv4(),
-    ...data,
-  };
-
-  const documentClient = new AWS.DynamoDB.DocumentClient();
+const sendDataAsSMS = (data) => {
+  // init sns client
   const snsClient = new AWS.SNS();
 
   const snsMessage = `
@@ -54,7 +33,8 @@ export const create = async (event, context) => {
   }
 
   log(`sending SMS to ${process.env.CONTACT_SMS_ENDPOINT}...`);
-  await snsClient.publish(snsParams).promise()
+  // return promise that will send message
+  return snsClient.publish(snsParams).promise()
     .then((response) => {
       log(`...SMS successful.`);
     })
@@ -62,14 +42,47 @@ export const create = async (event, context) => {
       log(err);
       log(`...SMS failed.`);
     });
+}
 
+/**
+ * Handler for contact API Submission
+ * @param {*} event
+ * @param {*} context
+ */
+export const create = async (event, context) => {
+  log('initializing handler...');
+  let data;
+
+  // parse json from request body
+  try {
+    const body = JSON.parse(event.body);
+    data = body.data;
+  } catch (err) {
+    log('...unable to parse request data');
+    return httpService.createResponse(HTTP_BAD_REQUEST, {
+      success: false,
+      error: "Unable to parse request data.",
+    });
+  }
+
+  const now = new Date().getTime();
+  // create the record
+  const record = {
+    id: uuidv4(),
+    createdAt: now,
+    ...data,
+  };
+
+  if(process.env.SEND_SMS_ON_SUBMIT) {
+    await sendDataAsSMS(data);
+  }
+
+  log(`writing record to ${process.env.DB_TABLE}...`);
+  const documentClient = new AWS.DynamoDB.DocumentClient();
   const documentParams = {
     TableName: process.env.DB_TABLE,
     Item: record,
   };
-
-  log(`writing record to ${process.env.DB_TABLE}`);
-
   return await documentClient.put(documentParams).promise()
     .then(() => {
       log('...write successful.');
