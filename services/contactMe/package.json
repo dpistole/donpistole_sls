@@ -1,0 +1,35 @@
+{
+  "name": "donpistole-api-contact-me",
+  "version": "1.0.0",
+  "description": "contact-me API for donpistole",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "NODE_ENV=development serverless offline --port 3003",
+    "dev": "webpack --mode=development --watch",
+    "deploy": "webpack --build && NODE_ENV=production AWS_PROFILE=deployment serverless deploy",
+    "remove": "AWS_PROFILE=deployment serverless remove",
+    "assume-role": "aws sts assume-role --role-arn arn:aws:iam::337671875760:role/donpistole-sls-contactme-dev-us-east-1-lambdaRole --role-session-name contactme-dev --duration 43200"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/plugin-transform-runtime": "^7.2.0",
+    "@babel/preset-env": "^7.3.1",
+    "aws-sdk": "^2.395.0",
+    "babel-loader": "^8.0.5",
+    "dotenv": "^6.2.0",
+    "httpService": "../../packages/httpService",
+    "serverless-dotenv-plugin": "^2.0.1",
+    "serverless-offline": "^4.2.0",
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1"
+  },
+  "dependencies": {
+    "debug": "^4.1.1",
+    "lodash": "^4.17.11",
+    "middy": "^0.22.1",
+    "uuid": "^3.3.2"
+  }
+}
